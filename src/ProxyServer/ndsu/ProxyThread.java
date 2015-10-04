@@ -2,9 +2,15 @@ package ProxyServer.ndsu;
 
 import java.net.*;
 import java.io.*;
+import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.logging.FileHandler;
+import java.util.logging.Logger;
+//^^^Implements log locking and synchronous handling automatically
 
 public class ProxyThread extends Thread {
+    Logger logger = Logger.getLogger("Access");
+    FileHandler fh;
     private Socket socket = null;
     private SocketAddress clientAddress = null;
     private static final int BUFFER_SIZE = 32768;
@@ -17,16 +23,20 @@ public class ProxyThread extends Thread {
     public void run() {
         try {
         	System.out.println(clientAddress);
-            DataOutputStream out =
-                    new DataOutputStream(socket.getOutputStream());
-            BufferedReader in = new BufferedReader(
-                    new InputStreamReader(socket.getInputStream()));
+//            DataOutputStream out =
+//                    new DataOutputStream(socket.getOutputStream());
+//            BufferedReader in = new BufferedReader(
+//                    new InputStreamReader(socket.getInputStream()));
+            //set up input and output stream
+            DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
             String inputLine;
             int cnt = 0;
             String urlToCall = "";
-            ///////////////////////////////////
-            //begin get request from client
+            int contentSize = 0;
+
+            //read input until empty
             while ((inputLine = in.readLine()) != null) {
                 try {
                     StringTokenizer tok = new StringTokenizer(inputLine);
@@ -34,8 +44,7 @@ public class ProxyThread extends Thread {
                 } catch (Exception e) {
                     break;
                 }
-                //parse the first line of the request to find the url
-                System.out.println(inputLine);
+                //parse the first line fof input for url
                 if (cnt == 0) {
                     String[] tokens = inputLine.split(" ");
                     urlToCall = tokens[1];
@@ -45,81 +54,76 @@ public class ProxyThread extends Thread {
                 cnt++;
             }
 
-            //end get request from client
-            ///////////////////////////////////
-
-
             BufferedReader rd = null;
-            try {
-                //System.out.println("sending request
-                //to real server for url: "
-                //        + urlToCall);
-                ///////////////////////////////////
-                //begin send request to server, get response from server
-                URL url = new URL(urlToCall);
-                URLConnection conn = url.openConnection();
-                conn.setDoInput(true);
-                //not doing HTTP posts
-                conn.setDoOutput(false);
-                //System.out.println("content length: " + conn.getContentLength());
-                //System.out.println("allowed user interaction: " + conn.getAllowUserInteraction());
-                //System.out.println("content encoding: " + conn.getContentEncoding());
-                //System.out.println("content type: " + conn.getContentType());
 
-                // Get the response
-                InputStream is = null;
-                HttpURLConnection huc = (HttpURLConnection)conn;
-                System.out.println(conn.getContentLength());
-
-
+            //check for cached copy
+            if (new File(urlToCall).exists())
+            {
+                System.out.println("Cached!");
+            }
+            //otherwise fetch it from remote server
+            else {
 
                 try {
+                    //send request to server
+                    System.out.println("sending request to real server for url: " + urlToCall);
+                    URL url = new URL(urlToCall);
+                    URLConnection conn = url.openConnection();
+                    conn.setDoInput(true);
+                    //not doing HTTP posts
+                    conn.setDoOutput(false);
+                    contentSize = conn.getContentLength();
+
+                    //get response from server
+                    InputStream is = null;
+                    try {
                         is = conn.getInputStream();
                         rd = new BufferedReader(new InputStreamReader(is));
-                } catch (IOException ioe) {
-                         System.out.println(
-                                "********* IO EXCEPTION **********: " + ioe);
+                    } catch (IOException ioe) {
+                        System.out.println("********* IO EXCEPTION **********: " + ioe);
+                    }
+
+                    //send response to client
+                    byte by[] = new byte[BUFFER_SIZE];
+                    int index = is.read(by, 0, BUFFER_SIZE);
+                    while (index != -1) {
+                        out.write(by, 0, index);
+                        index = is.read(by, 0, BUFFER_SIZE);
+                    }
+                    out.flush();
+                } catch (Exception e) {
+                    //can redirect this to error log
+                    System.err.println("Encountered exception: " + e);
+                    //encountered error - just send nothing back, so
+                    //processing can continue (error appears in telnet response)
+                    out.writeBytes("");
                 }
-                //end send request to server, get response from server
-                ///////////////////////////////////
 
-                ///////////////////////////////////
-                //begin send response to client
-                byte by[] = new byte[ BUFFER_SIZE ];
-                int index = is.read( by, 0, BUFFER_SIZE );
-                while ( index != -1 )
-                {
-                    out.write( by, 0, index );
-                    index = is.read( by, 0, BUFFER_SIZE );
+                //log result to logfile
+                try {
+
+                    // This block configure the logger with handler and formatter
+                    fh = new FileHandler("Access.log");
+                    logger.addHandler(fh);
+
+                    // the following statement is used to log any messages
+                    String timestamp = new SimpleDateFormat("yyyy_MM_dd_HH:mm:ss").format(Calendar.getInstance().getTime());
+                    logger.info("Date: " + timestamp + ", Client Address: " + "ipaddress" + ", URL: " + urlToCall + ", Content Size: " + contentSize);
+
+                } catch (SecurityException e) {
+                    e.printStackTrace();
                 }
-                out.flush();
-
-                //end send response to client
-                ///////////////////////////////////
-            } catch (Exception e) {
-                //can redirect this to error log
-                System.err.println("Encountered exception: " + e);
-                //encountered error - just send nothing back, so
-                //processing can continue
-                out.writeBytes("failed");
+                //close out all resources
+                if (rd != null) {
+                    rd.close();
+                }
+                if (socket != null) {
+                    socket.close();
+                }
             }
-
-            //close out all resources
-            if (rd != null) {
-                rd.close();
-            }
-            if (out != null) {
-                out.close();
-            }
-            if (in != null) {
-                in.close();
-            }
-            if (socket != null) {
-                socket.close();
-            }
-
         } catch (IOException e) {
             e.printStackTrace();
         }
+
     }
 }

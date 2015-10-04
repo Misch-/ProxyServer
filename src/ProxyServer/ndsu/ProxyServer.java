@@ -8,11 +8,11 @@ public class ProxyServer {
         ServerSocket serverSocket = null;
         boolean listening = true;
 
-        int port = 25432;	//default
+        int port = 25432;	//default port if ran without parameters
         try {
             port = Integer.parseInt(args[0]);
         } catch (Exception e) {
-            //ignore me
+            //purposefully left blank
         }
 
         try {

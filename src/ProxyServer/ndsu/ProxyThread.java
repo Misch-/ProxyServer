@@ -58,53 +58,43 @@ public class ProxyThread extends Thread {
                 //        + urlToCall);
                 ///////////////////////////////////
                 //begin send request to server, get response from server
-                System.out.println("url to call: " + urlToCall);
                 URL url = new URL(urlToCall);
                 URLConnection conn = url.openConnection();
                 conn.setDoInput(true);
                 //not doing HTTP posts
                 conn.setDoOutput(false);
-                System.out.println("content length: " + conn.getContentLength());
-                System.out.println("allowed user interaction: " + conn.getAllowUserInteraction());
-                System.out.println("content encoding: " + conn.getContentEncoding());
-                System.out.println("content type: " + conn.getContentType());
+                //System.out.println("content length: " + conn.getContentLength());
+                //System.out.println("allowed user interaction: " + conn.getAllowUserInteraction());
+                //System.out.println("content encoding: " + conn.getContentEncoding());
+                //System.out.println("content type: " + conn.getContentType());
 
                 // Get the response
-                System.out.println("2");
                 InputStream is = null;
                 HttpURLConnection huc = (HttpURLConnection)conn;
                 System.out.println(conn.getContentLength());
-                if (conn.getContentLength() > 0) {
-                    try {
+
+
+
+                try {
                         is = conn.getInputStream();
                         rd = new BufferedReader(new InputStreamReader(is));
-                    } catch (IOException ioe) {
+                } catch (IOException ioe) {
                          System.out.println(
                                 "********* IO EXCEPTION **********: " + ioe);
-                    }
-                }
-                else{
-                    System.out.println("content length failed");
                 }
                 //end send request to server, get response from server
                 ///////////////////////////////////
 
-                System.out.println("3");
                 ///////////////////////////////////
                 //begin send response to client
                 byte by[] = new byte[ BUFFER_SIZE ];
-                System.out.println("4");
                 int index = is.read( by, 0, BUFFER_SIZE );
-                System.out.println("5");
                 while ( index != -1 )
                 {
                     out.write( by, 0, index );
                     index = is.read( by, 0, BUFFER_SIZE );
-                    System.out.println("6");
                 }
-                System.out.println("7");
                 out.flush();
-                System.out.println("8");
 
                 //end send response to client
                 ///////////////////////////////////

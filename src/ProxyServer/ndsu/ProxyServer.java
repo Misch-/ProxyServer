@@ -24,7 +24,8 @@ public class ProxyServer {
         }
 
         while (listening) {
-            new ProxyThread(serverSocket.accept()).start();
+        	Socket acceptedSocket = serverSocket.accept();
+            new ProxyThread(acceptedSocket, acceptedSocket.getRemoteSocketAddress()).start();
         }
         serverSocket.close();
     }

@@ -6,25 +6,23 @@ import java.util.*;
 
 public class ProxyThread extends Thread {
     private Socket socket = null;
+    private SocketAddress clientAddress = null;
     private static final int BUFFER_SIZE = 32768;
-    public ProxyThread(Socket socket) {
+    public ProxyThread(Socket socket, SocketAddress address) {
         super("ProxyThread");
         this.socket = socket;
+        this.clientAddress = address;
     }
 
     public void run() {
-        //get input from user
-        //send request to server
-        //get response from server
-        //send response to user
-
         try {
+        	System.out.println(clientAddress);
             DataOutputStream out =
                     new DataOutputStream(socket.getOutputStream());
             BufferedReader in = new BufferedReader(
                     new InputStreamReader(socket.getInputStream()));
 
-            String inputLine, outputLine;
+            String inputLine;
             int cnt = 0;
             String urlToCall = "";
             ///////////////////////////////////

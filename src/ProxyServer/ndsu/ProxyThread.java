@@ -108,7 +108,7 @@ public class ProxyThread extends Thread {
 
                     // the following statement is used to log any messages
                     String timestamp = new SimpleDateFormat("yyyy_MM_dd_HH:mm:ss").format(Calendar.getInstance().getTime());
-                    logger.info("Date: " + timestamp + ", Client Address: " + "ipaddress" + ", URL: " + urlToCall + ", Content Size: " + contentSize);
+                    logger.info("Date: " + timestamp + ", Client Address: " + clientAddress + ", URL: " + urlToCall + ", Content Size: " + contentSize);
 
                 } catch (SecurityException e) {
                     e.printStackTrace();
